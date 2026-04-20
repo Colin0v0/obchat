@@ -1,0 +1,230 @@
+.obchat-view {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	gap: 12px;
+	padding: 12px;
+	background: var(--background-primary);
+	color: var(--text-normal);
+}
+
+.obchat-header {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 12px;
+}
+
+.obchat-header__title-wrap {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.obchat-header__title {
+	font-size: var(--font-ui-large);
+	font-weight: var(--font-semibold);
+}
+
+.obchat-header__subtitle {
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+}
+
+.obchat-header__actions {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.obchat-header-meta {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
+.obchat-chip {
+	padding: 4px 8px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-s);
+	background: var(--background-secondary);
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+}
+
+.obchat-toolbar {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 10px 12px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-m);
+	background: var(--background-secondary);
+}
+
+.obchat-toolbar__label {
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+}
+
+.obchat-select {
+	min-width: 180px;
+}
+
+.obchat-messages {
+	flex: 1;
+	min-height: 0;
+	overflow-y: auto;
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	padding-right: 4px;
+}
+
+.obchat-empty {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	padding: 20px 16px;
+	border: 1px dashed var(--background-modifier-border);
+	border-radius: var(--radius-m);
+	background: var(--background-secondary);
+}
+
+.obchat-empty__title {
+	font-weight: var(--font-semibold);
+}
+
+.obchat-empty__desc {
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+	line-height: 1.5;
+}
+
+.obchat-message {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	padding: 12px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-m);
+	background: var(--background-secondary);
+}
+
+.obchat-message--user {
+	background: color-mix(in srgb, var(--interactive-accent) 10%, var(--background-primary));
+}
+
+.obchat-message--assistant {
+	background: var(--background-secondary);
+}
+
+.obchat-message--error {
+	border-color: var(--color-red);
+}
+
+.obchat-message__meta {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px;
+	font-size: var(--font-ui-smaller);
+	color: var(--text-muted);
+}
+
+.obchat-message__role {
+	font-weight: var(--font-semibold);
+	color: var(--text-normal);
+}
+
+.obchat-message__context {
+	padding: 2px 6px;
+	border-radius: var(--radius-s);
+	background: var(--background-modifier-hover);
+}
+
+.obchat-message__body {
+	line-height: 1.6;
+	word-break: break-word;
+}
+
+.obchat-message__body--streaming {
+	white-space: pre-wrap;
+	font-family: var(--font-text);
+}
+
+.obchat-message__body p:first-child {
+	margin-top: 0;
+}
+
+.obchat-message__body p:last-child {
+	margin-bottom: 0;
+}
+
+.obchat-message__actions {
+	display: flex;
+	gap: 8px;
+}
+
+.obchat-composer {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	padding: 12px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-m);
+	background: var(--background-secondary);
+}
+
+.obchat-composer__input {
+	min-height: 96px;
+	resize: vertical;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-m);
+	background: var(--background-primary);
+	color: var(--text-normal);
+	padding: 10px 12px;
+	line-height: 1.6;
+}
+
+.obchat-composer__input:focus {
+	border-color: var(--interactive-accent);
+	box-shadow: 0 0 0 1px var(--interactive-accent);
+	outline: none;
+}
+
+.obchat-composer__actions {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+}
+
+.obchat-composer__hint {
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+}
+
+.obchat-button {
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-s);
+	background: var(--background-primary);
+	color: var(--text-normal);
+	padding: 6px 12px;
+}
+
+.obchat-button:hover {
+	background: var(--background-modifier-hover);
+}
+
+.obchat-setting-text {
+	width: 320px;
+}
+
+.obchat-setting-textarea {
+	width: min(100%, 520px);
+}
+
+.obchat-secret-setting .setting-item-control {
+	min-width: 320px;
+}

@@ -1,0 +1,9 @@
+{
+	"id": "obchat",
+	"name": "Obchat",
+	"version": "0.1.1",
+	"minAppVersion": "1.11.5",
+	"description": "A lightweight desktop sidebar chat plugin for Obsidian with direct Codex, Claude, Gemini, and OpenAI-compatible API access.",
+	"author": "colin",
+	"isDesktopOnly": true
+}
