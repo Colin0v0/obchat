@@ -5,7 +5,10 @@ import type { ProviderModelListRequest, ProviderRequest } from "../types";
 
 function buildResponsesInputMessage(message: ProviderRequest["messages"][number]): {
 	role: "user" | "assistant";
-	content: Array<{ type: "input_text" | "output_text"; text: string }>;
+	content: Array<
+		| { type: "input_text" | "output_text"; text: string }
+		| { type: "input_image"; image_url: string }
+	>;
 } {
 	// Responses API 对历史 assistant 消息要求使用 output_text，而不是 input_text。
 	if (message.role === "assistant") {
@@ -20,13 +23,55 @@ function buildResponsesInputMessage(message: ProviderRequest["messages"][number]
 		};
 	}
 
+	const content: Array<
+		| { type: "input_text"; text: string }
+		| { type: "input_image"; image_url: string }
+	> = [
+		{
+			type: "input_text",
+			text: message.content,
+		},
+	];
+	for (const attachment of message.imageAttachments ?? []) {
+		content.push({
+			type: "input_image",
+			image_url: attachment.dataUrl,
+		});
+	}
+
+	return {
+		role: "user",
+		content,
+	};
+}
+
+function buildOpenAiCompatibleMessage(message: ProviderRequest["messages"][number]): {
+	role: "user" | "assistant";
+	content: string | Array<
+		| { type: "text"; text: string }
+		| { type: "image_url"; image_url: { url: string } }
+	>;
+} {
+	if (message.role === "assistant" || !message.imageAttachments?.length) {
+		return {
+			role: message.role,
+			content: message.content,
+		};
+	}
+
 	return {
 		role: "user",
 		content: [
 			{
-				type: "input_text",
+				type: "text",
 				text: message.content,
 			},
+			...message.imageAttachments.map((attachment) => ({
+				type: "image_url" as const,
+				image_url: {
+					url: attachment.dataUrl,
+				},
+			})),
 		],
 	};
 }
@@ -109,7 +154,13 @@ async function listOpenAiCompatibleModels(request: ProviderModelListRequest): Pr
 
 export class OpenAICompatibleProvider implements ChatProvider {
 	async *stream(request: ProviderRequest): AsyncGenerator<string> {
-		const messages: Array<{ role: "system" | "user" | "assistant"; content: string }> = [];
+		const messages: Array<{
+			role: "system" | "user" | "assistant";
+			content: string | Array<
+				| { type: "text"; text: string }
+				| { type: "image_url"; image_url: { url: string } }
+			>;
+		}> = [];
 		const systemPrompt = request.systemPrompt.trim();
 		if (systemPrompt) {
 			messages.push({
@@ -119,10 +170,7 @@ export class OpenAICompatibleProvider implements ChatProvider {
 		}
 
 		for (const message of request.messages) {
-			messages.push({
-				role: message.role,
-				content: message.content,
-			});
+			messages.push(buildOpenAiCompatibleMessage(message));
 		}
 
 		let emittedAnyText = false;

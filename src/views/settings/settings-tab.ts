@@ -20,8 +20,9 @@ export class ObchatSettingTab extends PluginSettingTab {
 
 	private renderProviderSection(containerEl: HTMLElement): void {
 		containerEl.createEl("h3", { text: "供应商" });
+		const providerSectionEl = containerEl.createDiv({ cls: "obchat-provider-section" });
 
-		new Setting(containerEl)
+		new Setting(providerSectionEl)
 			.setName("管理供应商")
 			.setDesc("支持同时保存多个 provider 配置，并在聊天页随时切换。")
 			.addButton((button) => {
@@ -34,96 +35,110 @@ export class ObchatSettingTab extends PluginSettingTab {
 				});
 			});
 
+		const tableEl = providerSectionEl.createEl("table", { cls: "obchat-provider-table" });
+		const theadEl = tableEl.createEl("thead");
+		const headerRowEl = theadEl.createEl("tr");
+		headerRowEl.createEl("th", { text: "名称" });
+		headerRowEl.createEl("th", { text: "供应商" });
+		headerRowEl.createEl("th", { text: "模型" });
+		headerRowEl.createEl("th", { text: "操作" });
+		const tbodyEl = tableEl.createEl("tbody");
+
 		for (const profile of this.plugin.settings.profiles) {
-			const isActive = this.plugin.settings.activeProfileId === profile.id;
-			const modelText = profile.model.trim() || "未设置模型";
-			const statusText = profile.apiKey.trim() && profile.baseUrl.trim() ? "已配置" : "待配置";
 			const providerTitle = PROVIDER_TITLES[profile.provider];
 			const profileLabel = profile.name.trim() || providerTitle;
 
-			new Setting(containerEl)
-				.setName(profileLabel)
-				.setDesc(`${providerTitle} · ${statusText} · 当前模型：${modelText}${isActive ? " · 当前使用中" : ""}`)
-				.addButton((button) => {
-					button.setButtonText(isActive ? "当前使用中" : "设为当前");
-					button.setDisabled(isActive);
-					button.onClick(async () => {
-						await this.plugin.setActiveProfile(profile.id);
-						this.display();
-					});
-				})
-				.addButton((button) => {
-					button.setButtonText("配置");
-					button.onClick(() => {
-						this.plugin.openProviderConfigModal(profile.id, () => {
-							this.display();
-						});
-					});
-				})
-				.addButton((button) => {
-					button.setButtonText("测试");
-					button.onClick(async () => {
-						button.setDisabled(true);
-						try {
-							let responseText = "";
-							for await (const chunk of this.plugin.chatService.stream(profile, [
-								{
-									role: "user",
-									content: "请只回复“连接成功”。",
-								},
-							])) {
-								responseText += chunk;
-							}
-							if (!responseText.trim()) {
-								throw new Error("上游返回了空响应。");
-							}
-							new Notice(`${PROVIDER_TITLES[profile.provider]} 连接测试成功。`);
-						} catch (error) {
-							const message = error instanceof Error ? error.message : String(error);
-							new Notice(`连接测试失败：${message}`);
-						} finally {
-							button.setDisabled(false);
-						}
-					});
-				})
-				.addButton((button) => {
-					button.setButtonText("拉模型");
-					button.onClick(async () => {
-						button.setDisabled(true);
-						try {
-							const modelIds = await this.plugin.chatService.listModels(profile);
-							await this.plugin.updateProfile(profile.id, (targetProfile) => {
-								targetProfile.availableModels = modelIds;
-								const firstModel = modelIds[0];
-								if (firstModel) {
-									targetProfile.model = firstModel;
-								}
-							});
-							new Notice(`已为 ${PROVIDER_TITLES[profile.provider]} 获取 ${modelIds.length} 个模型。`);
-							this.display();
-						} catch (error) {
-							const message = error instanceof Error ? error.message : String(error);
-							new Notice(`拉取模型失败：${message}`);
-						} finally {
-							button.setDisabled(false);
-						}
-					});
-				})
-				.addButton((button) => {
-					button.setButtonText("删除");
-					button.setDisabled(this.plugin.settings.profiles.length <= 1);
-					button.onClick(async () => {
-						try {
-							await this.plugin.removeProfile(profile.id);
-							new Notice(`已删除供应商：${profileLabel}`);
-							this.display();
-						} catch (error) {
-							const message = error instanceof Error ? error.message : String(error);
-							new Notice(`删除失败：${message}`);
-						}
-					});
+			const rowEl = tbodyEl.createEl("tr");
+			rowEl.createEl("td", { cls: "obchat-provider-table__name", text: profileLabel });
+			rowEl.createEl("td", { text: providerTitle });
+			rowEl.createEl("td", { cls: "obchat-provider-table__model", text: profile.model });
+			const actionsEl = rowEl.createEl("td", { cls: "obchat-provider-table__actions" });
+
+			this.createProviderTableButton(actionsEl, "配置", () => {
+				this.plugin.openProviderConfigModal(profile.id, () => {
+					this.display();
 				});
+			});
+
+			this.createProviderTableButton(actionsEl, "测试", async (buttonEl) => {
+				buttonEl.disabled = true;
+				try {
+					let responseText = "";
+					for await (const chunk of this.plugin.chatService.stream(profile, [
+						{
+							role: "user",
+							content: "请只回复“连接成功”。",
+						},
+					])) {
+						responseText += chunk;
+					}
+					if (!responseText.trim()) {
+						throw new Error("上游返回了空响应。");
+					}
+					new Notice(`${PROVIDER_TITLES[profile.provider]} 连接测试成功。`);
+				} catch (error) {
+					const message = error instanceof Error ? error.message : String(error);
+					new Notice(`连接测试失败：${message}`);
+				} finally {
+					buttonEl.disabled = false;
+				}
+			});
+
+			this.createProviderTableButton(actionsEl, "拉模型", async (buttonEl) => {
+				buttonEl.disabled = true;
+				try {
+					const modelIds = await this.plugin.chatService.listModels(profile);
+					await this.plugin.updateProfile(profile.id, (targetProfile) => {
+						targetProfile.availableModels = modelIds;
+						const firstModel = modelIds[0];
+						if (firstModel) {
+							targetProfile.model = firstModel;
+						}
+					});
+					new Notice(`已为 ${PROVIDER_TITLES[profile.provider]} 获取 ${modelIds.length} 个模型。`);
+					this.display();
+				} catch (error) {
+					const message = error instanceof Error ? error.message : String(error);
+					new Notice(`拉取模型失败：${message}`);
+				} finally {
+					buttonEl.disabled = false;
+				}
+			});
+
+			this.createProviderTableButton(actionsEl, "删除", async (buttonEl) => {
+				buttonEl.disabled = true;
+				try {
+					await this.plugin.removeProfile(profile.id);
+					new Notice(`已删除供应商：${profileLabel}`);
+					this.display();
+				} catch (error) {
+					const message = error instanceof Error ? error.message : String(error);
+					new Notice(`删除失败：${message}`);
+				} finally {
+					buttonEl.disabled = false;
+				}
+			}, this.plugin.settings.profiles.length <= 1);
 		}
+	}
+
+	private createProviderTableButton(
+		parentEl: HTMLElement,
+		text: string,
+		onClick: (buttonEl: HTMLButtonElement) => void | Promise<void>,
+		disabled = false,
+	): HTMLButtonElement {
+		const buttonEl = parentEl.createEl("button", {
+			cls: "obchat-provider-table__button",
+			text,
+			attr: {
+				type: "button",
+			},
+		});
+		buttonEl.disabled = disabled;
+		buttonEl.addEventListener("click", () => {
+			void onClick(buttonEl);
+		});
+		return buttonEl;
 	}
 
 	private renderDefaultBehaviorSection(containerEl: HTMLElement): void {

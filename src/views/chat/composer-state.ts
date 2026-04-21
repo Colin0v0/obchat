@@ -1,6 +1,5 @@
 interface ComposerStateElements {
 	textareaEl: HTMLTextAreaElement | null;
-	regenerateButtonEl: HTMLButtonElement | null;
 	sendButtonEl: HTMLButtonElement | null;
 	profileSelectEl: HTMLSelectElement | null;
 	modelSelectEl: HTMLSelectElement | null;
@@ -13,17 +12,15 @@ export function updateComposerState(
 	options: {
 		isSending: boolean;
 		isLoadingModels: boolean;
-		canRegenerate: boolean;
 	},
 ): void {
-	const { textareaEl, regenerateButtonEl, sendButtonEl } = elements;
-	if (!textareaEl || !sendButtonEl || !regenerateButtonEl) {
+	const { textareaEl, sendButtonEl } = elements;
+	if (!textareaEl || !sendButtonEl) {
 		return;
 	}
 
 	const disableControls = options.isSending || options.isLoadingModels;
 	textareaEl.disabled = options.isSending;
-	regenerateButtonEl.disabled = options.isSending || options.isLoadingModels || !options.canRegenerate;
 	sendButtonEl.disabled = options.isLoadingModels;
 	sendButtonEl.textContent = options.isSending ? "停止" : "发送";
 	if (elements.profileSelectEl) {

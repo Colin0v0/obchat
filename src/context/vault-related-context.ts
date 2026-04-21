@@ -4,6 +4,14 @@ import type { ContextSnapshot } from "../types";
 
 const MAX_RELATED_NOTES = 4;
 const MAX_RELATED_NOTE_CHARS = 3200;
+const MAX_REFERENCE_PREVIEW_CHARS = 180;
+
+function buildReferencePreview(noteContent: string): string {
+	return noteContent
+		.replace(/\s+/g, " ")
+		.trim()
+		.slice(0, MAX_REFERENCE_PREVIEW_CHARS);
+}
 
 function extractQueryTerms(userInput: string): string[] {
 	const normalizedInput = userInput.trim().toLowerCase();
@@ -108,5 +116,10 @@ export async function buildVaultRelatedContextSnapshot(app: App, userInput: stri
 		mode: "vault-related",
 		label: `全库相关笔记（${relatedNotes.length} 篇）`,
 		content: mergedContent,
+		references: relatedNotes.map(({ file, noteContent, score }) => ({
+			path: file.path,
+			score,
+			preview: buildReferencePreview(noteContent),
+		})),
 	};
 }

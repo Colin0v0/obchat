@@ -6,13 +6,18 @@ import { buildPromptContent } from "../../context/prompt-builder";
 import type ObchatPlugin from "../../main";
 import { buildContextSnapshot } from "../../services/context-service";
 import { insertContentIntoActiveNote } from "../../services/document-service";
+import { exportChatSessionToMarkdown } from "../../services/export-service";
+import {
+	createCurrentNoteImageAttachments,
+	createImageAttachmentsFromFiles,
+} from "../../services/image-attachment-service";
 import { MarkdownReviewModal } from "../modals/markdown-review-modal";
 import { SessionTitleModal } from "../modals/session-title-modal";
 import { updateComposerState } from "./composer-state";
 import { renderModelOptions, renderProfileOptions } from "./header-controls";
 import { renderMessageList } from "./message-list";
 import { createMessageId, getProfileLabel } from "./shared";
-import type { ConversationMessage, ObchatContextMode, ObchatProfile } from "../../types";
+import type { ConversationMessage, ImageAttachment, ObchatContextMode, ObchatProfile } from "../../types";
 
 const GENERATION_ABORT_MESSAGE = "请求已取消。";
 
@@ -23,16 +28,18 @@ export class ObchatChatView extends ItemView {
 	private isLoadingModels = false;
 	private isComposingWithIme = false;
 	private draft = "";
+	private pendingImageAttachments: ImageAttachment[] = [];
 	private renderTimer: number | null = null;
 	private currentAbortController: AbortController | null = null;
 
 	private sessionSelectEl: HTMLSelectElement | null = null;
+	private sessionTitleLabelEl: HTMLElement | null = null;
 	private profileSelectEl: HTMLSelectElement | null = null;
 	private modelSelectEl: HTMLSelectElement | null = null;
 	private contextSelectEl: HTMLSelectElement | null = null;
 	private messagesEl: HTMLElement | null = null;
 	private textareaEl: HTMLTextAreaElement | null = null;
-	private regenerateButtonEl: HTMLButtonElement | null = null;
+	private attachmentListEl: HTMLElement | null = null;
 	private sendButtonEl: HTMLButtonElement | null = null;
 	private refreshModelsButtonEl: HTMLButtonElement | null = null;
 	private emptyStateEl: HTMLElement | null = null;
@@ -128,8 +135,12 @@ export class ObchatChatView extends ItemView {
 
 		const headerEl = this.contentEl.createDiv({ cls: "obchat-header" });
 		const headerMainEl = headerEl.createDiv({ cls: "obchat-header__main" });
-		headerMainEl.createEl("div", { cls: "obchat-header__title", text: "Obchat" });
-		this.sessionSelectEl = headerMainEl.createEl("select", { cls: "dropdown obchat-select obchat-select--session" });
+		const titleEl = headerMainEl.createDiv({ cls: "obchat-header__title" });
+		titleEl.createSpan({ text: "Obchat：" });
+		const sessionPickerEl = titleEl.createSpan({ cls: "obchat-title-session-picker" });
+		this.sessionTitleLabelEl = sessionPickerEl.createSpan({ cls: "obchat-title-session-label" });
+		sessionPickerEl.createSpan({ cls: "obchat-title-session-arrow" });
+		this.sessionSelectEl = sessionPickerEl.createEl("select", { cls: "dropdown obchat-title-session-native" });
 		this.sessionSelectEl.setAttribute("aria-label", "切换会话");
 		this.sessionSelectEl.title = "切换会话";
 		this.sessionSelectEl.addEventListener("change", () => {
@@ -152,12 +163,29 @@ export class ObchatChatView extends ItemView {
 		});
 		renameSessionButtonEl.addClass("obchat-icon-button--header");
 
+		const exportSessionButtonEl = this.createIconActionButton(actionsEl, "download", "导出当前会话为 Markdown", () => {
+			void this.handleExportSession();
+		});
+		exportSessionButtonEl.addClass("obchat-icon-button--header");
+
 		const clearButtonEl = this.createIconActionButton(actionsEl, "trash-2", "清空当前对话", () => {
 			void this.handleDeleteSession();
 		});
 		clearButtonEl.addClass("obchat-icon-button--header");
 
-		const controlsEl = this.contentEl.createDiv({ cls: "obchat-controls" });
+		const settingsButtonEl = this.createIconActionButton(actionsEl, "settings-2", "打开 Obchat 设置", () => {
+			void this.plugin.openPluginSettings();
+		});
+		settingsButtonEl.addClass("obchat-icon-button--header");
+
+		this.messagesEl = this.contentEl.createDiv({ cls: "obchat-messages" });
+		this.emptyStateEl = this.messagesEl.createDiv({ cls: "obchat-empty" });
+		this.emptyStateEl.setText("开始对话");
+
+		const composerEl = this.contentEl.createDiv({ cls: "obchat-composer" });
+		const inputShellEl = composerEl.createDiv({ cls: "obchat-composer__input-shell" });
+		const composerContextEl = inputShellEl.createDiv({ cls: "obchat-composer__context" });
+		const controlsEl = composerContextEl.createDiv({ cls: "obchat-controls" });
 
 		const profileGroupEl = controlsEl.createDiv({ cls: "obchat-controls__group" });
 		this.profileSelectEl = profileGroupEl.createEl("select", { cls: "dropdown obchat-select obchat-select--wide" });
@@ -185,29 +213,8 @@ export class ObchatChatView extends ItemView {
 			void this.handleModelChange(nextModel);
 		});
 
-		const controlsActionsEl = controlsEl.createDiv({ cls: "obchat-controls__actions" });
-
-		this.refreshModelsButtonEl = this.createIconActionButton(controlsActionsEl, "refresh-cw", "刷新模型列表", () => {
-			void this.refreshModelsFromProvider();
-		});
-		this.refreshModelsButtonEl.addClass("obchat-icon-button--inline", "obchat-controls__action");
-
-		const providerSettingsButtonEl = this.createIconActionButton(controlsActionsEl, "settings-2", "配置当前供应商", () => {
-			this.plugin.openProviderConfigModal(this.plugin.getActiveProfile().id, () => {
-				this.refreshFromSettings();
-			});
-		});
-		providerSettingsButtonEl.addClass("obchat-icon-button--inline", "obchat-controls__action");
-
-		this.messagesEl = this.contentEl.createDiv({ cls: "obchat-messages" });
-		this.emptyStateEl = this.messagesEl.createDiv({ cls: "obchat-empty" });
-		this.emptyStateEl.setText("开始对话");
-
-		const composerEl = this.contentEl.createDiv({ cls: "obchat-composer" });
-		const composerTopbarEl = composerEl.createDiv({ cls: "obchat-composer__topbar" });
-		this.contextSelectEl = composerTopbarEl.createEl("select", { cls: "dropdown obchat-select" });
+		this.contextSelectEl = composerContextEl.createEl("select", { cls: "dropdown obchat-select obchat-select--context" });
 		this.contextSelectEl.createEl("option", { value: "none", text: "无上下文" });
-		this.contextSelectEl.createEl("option", { value: "selection", text: "当前选中文本" });
 		this.contextSelectEl.createEl("option", { value: "current-note", text: "当前笔记全文" });
 		this.contextSelectEl.createEl("option", { value: "vault-related", text: "全库相关笔记" });
 		this.contextSelectEl.value = this.currentContextMode;
@@ -216,20 +223,24 @@ export class ObchatChatView extends ItemView {
 			this.persistViewState();
 		});
 
-		const composerActionsEl = composerTopbarEl.createDiv({ cls: "obchat-composer__actions" });
-		this.regenerateButtonEl = composerActionsEl.createEl("button", {
-			cls: "obchat-button obchat-button--ghost",
-			text: "重新生成",
+		const resizeHandleEl = inputShellEl.createDiv({
+			cls: "obchat-composer__resize-handle",
 			attr: {
-				type: "button",
+				role: "separator",
+				"aria-label": "拖动调整输入框高度",
+				title: "拖动调整输入框高度",
 			},
 		});
-		this.regenerateButtonEl.addEventListener("click", () => {
-			void this.handleRegenerate();
-		});
+		this.registerComposerResizeHandle(resizeHandleEl);
 
-		this.sendButtonEl = composerTopbarEl.createEl("button", {
-			cls: "mod-cta obchat-button obchat-button--send",
+		this.textareaEl = inputShellEl.createEl("textarea", {
+			cls: "obchat-composer__input",
+			attr: {
+				placeholder: "输入你的问题，Shift+Enter 换行，Enter 发送",
+			},
+		});
+		this.sendButtonEl = inputShellEl.createEl("button", {
+			cls: "mod-cta obchat-button obchat-button--send obchat-composer__send",
 			text: "发送",
 			attr: {
 				type: "button",
@@ -244,12 +255,6 @@ export class ObchatChatView extends ItemView {
 			void this.handleSend();
 		});
 
-		this.textareaEl = composerEl.createEl("textarea", {
-			cls: "obchat-composer__input",
-			attr: {
-				placeholder: "输入你的问题，Shift+Enter 换行，Enter 发送",
-			},
-		});
 		this.textareaEl.value = this.draft;
 		this.textareaEl.addEventListener("input", () => {
 			this.draft = this.textareaEl?.value ?? "";
@@ -273,6 +278,122 @@ export class ObchatChatView extends ItemView {
 			event.preventDefault();
 			void this.handleSend();
 		});
+		this.textareaEl.addEventListener("paste", (event) => {
+			void this.handlePasteImages(event);
+		});
+		inputShellEl.addEventListener("dragover", (event) => {
+			if (this.hasImageFiles(event.dataTransfer?.files)) {
+				event.preventDefault();
+				inputShellEl.addClass("is-dragging-image");
+			}
+		});
+		inputShellEl.addEventListener("dragleave", () => {
+			inputShellEl.removeClass("is-dragging-image");
+		});
+		inputShellEl.addEventListener("drop", (event) => {
+			inputShellEl.removeClass("is-dragging-image");
+			void this.handleDropImages(event);
+		});
+		this.attachmentListEl = inputShellEl.createDiv({ cls: "obchat-attachments" });
+	}
+
+	private hasImageFiles(fileList: FileList | null | undefined): boolean {
+		return Array.from(fileList ?? []).some((file) => (
+			file.type.startsWith("image/")
+			|| /\.(avif|gif|jpe?g|png|webp)$/i.test(file.name)
+		));
+	}
+
+	private renderPendingImageAttachments(): void {
+		if (!this.attachmentListEl) {
+			return;
+		}
+
+		this.attachmentListEl.empty();
+		this.attachmentListEl.parentElement?.toggleClass("has-image-attachments", this.pendingImageAttachments.length > 0);
+		for (const attachment of this.pendingImageAttachments) {
+			const attachmentEl = this.attachmentListEl.createDiv({ cls: "obchat-attachment" });
+			attachmentEl.createEl("img", {
+				cls: "obchat-attachment__thumb",
+				attr: {
+					src: attachment.dataUrl,
+					alt: attachment.name,
+				},
+			});
+			attachmentEl.createSpan({ cls: "obchat-attachment__name", text: attachment.name });
+			const removeButtonEl = attachmentEl.createEl("button", {
+				cls: "obchat-attachment__remove",
+				text: "×",
+				attr: {
+					type: "button",
+					"aria-label": `移除图片 ${attachment.name}`,
+				},
+			});
+			removeButtonEl.addEventListener("click", () => {
+				this.pendingImageAttachments = this.pendingImageAttachments.filter((item) => item.id !== attachment.id);
+				this.renderPendingImageAttachments();
+			});
+		}
+	}
+
+	private async addImageFiles(files: File[]): Promise<void> {
+		const attachments = await createImageAttachmentsFromFiles(files);
+		if (attachments.length === 0) {
+			return;
+		}
+
+		this.pendingImageAttachments = [...this.pendingImageAttachments, ...attachments];
+		this.renderPendingImageAttachments();
+		new Notice(`已添加 ${attachments.length} 张图片。`);
+	}
+
+	private async handlePasteImages(event: ClipboardEvent): Promise<void> {
+		const files = Array.from(event.clipboardData?.files ?? []);
+		if (!this.hasImageFiles(event.clipboardData?.files)) {
+			return;
+		}
+
+		event.preventDefault();
+		await this.addImageFiles(files);
+	}
+
+	private async handleDropImages(event: DragEvent): Promise<void> {
+		const files = Array.from(event.dataTransfer?.files ?? []);
+		if (!this.hasImageFiles(event.dataTransfer?.files)) {
+			return;
+		}
+
+		event.preventDefault();
+		await this.addImageFiles(files);
+	}
+
+	private registerComposerResizeHandle(handleEl: HTMLElement): void {
+		this.registerDomEvent(handleEl, "mousedown", (event) => {
+			event.preventDefault();
+			const textareaEl = this.textareaEl;
+			if (!textareaEl) {
+				return;
+			}
+
+			const startY = event.clientY;
+			const startHeight = textareaEl.getBoundingClientRect().height;
+			const minHeight = 88;
+			const maxHeight = Math.min(420, window.innerHeight * 0.55);
+
+			const onMouseMove = (moveEvent: MouseEvent) => {
+				// 手柄在右上角，向上拖时输入框增高，向下拖时变矮。
+				const nextHeight = Math.min(maxHeight, Math.max(minHeight, startHeight + startY - moveEvent.clientY));
+				textareaEl.style.height = `${nextHeight}px`;
+			};
+
+			const onMouseUp = () => {
+				window.removeEventListener("mousemove", onMouseMove);
+				window.removeEventListener("mouseup", onMouseUp);
+			};
+
+			window.addEventListener("mousemove", onMouseMove);
+			window.addEventListener("mouseup", onMouseUp);
+		});
 	}
 
 	private renderProfileOptions(): void {
@@ -294,6 +415,10 @@ export class ObchatChatView extends ItemView {
 			});
 		});
 		this.sessionSelectEl.value = activeSession.id;
+		if (this.sessionTitleLabelEl) {
+			const activeSessionIndex = this.plugin.chatState.sessions.findIndex((session) => session.id === activeSession.id);
+			this.sessionTitleLabelEl.setText(activeSession.title.trim() || `会话 ${activeSessionIndex + 1}`);
+		}
 	}
 
 	private renderModelOptions(): void {
@@ -338,7 +463,6 @@ export class ObchatChatView extends ItemView {
 		updateComposerState(
 			{
 				textareaEl: this.textareaEl,
-				regenerateButtonEl: this.regenerateButtonEl,
 				sendButtonEl: this.sendButtonEl,
 				profileSelectEl: this.profileSelectEl,
 				modelSelectEl: this.modelSelectEl,
@@ -348,13 +472,8 @@ export class ObchatChatView extends ItemView {
 			{
 				isSending: this.isSending,
 				isLoadingModels: this.isLoadingModels,
-				canRegenerate: this.canRegenerate(),
 			},
 		);
-	}
-
-	private canRegenerate(): boolean {
-		return this.messages.some((message) => message.role === "user");
 	}
 
 	private async handleSessionChange(sessionId: string): Promise<void> {
@@ -409,6 +528,16 @@ export class ObchatChatView extends ItemView {
 		}
 	}
 
+	private async handleExportSession(): Promise<void> {
+		try {
+			const exportPath = await exportChatSessionToMarkdown(this.app, this.plugin.getActiveChatSession());
+			new Notice(`已导出到：${exportPath}`);
+		} catch (error) {
+			const message = error instanceof Error ? error.message : String(error);
+			new Notice(`导出失败：${message}`);
+		}
+	}
+
 	private stopGeneration(): void {
 		if (!this.isSending) {
 			return;
@@ -450,6 +579,7 @@ export class ObchatChatView extends ItemView {
 					.map((message) => ({
 						role: message.role,
 						content: message.requestContent,
+						imageAttachments: message.imageAttachments,
 					})),
 				abortController.signal,
 			)) {
@@ -489,39 +619,6 @@ export class ObchatChatView extends ItemView {
 			if (this.currentAbortController === abortController) {
 				this.currentAbortController = null;
 			}
-		}
-	}
-
-	private async handleRegenerate(): Promise<void> {
-		if (this.isSending) {
-			return;
-		}
-
-		const lastUserIndex = [...this.messages]
-			.map((message, index) => ({ message, index }))
-			.reverse()
-			.find((item) => item.message.role === "user")?.index;
-
-		if (lastUserIndex === undefined) {
-			new Notice("当前还没有可以重新生成的内容。");
-			return;
-		}
-
-		this.messages = this.messages.slice(0, lastUserIndex + 1);
-		this.persistViewState();
-		await this.renderMessages();
-
-		const activeProfile = this.plugin.getActiveProfile();
-		const profileName = getProfileLabel(activeProfile);
-		const modelName = activeProfile.model.trim();
-		this.isSending = true;
-		try {
-			await this.generateAssistantReply(activeProfile, profileName, modelName);
-		} finally {
-			this.isSending = false;
-			this.persistViewState();
-			await this.renderMessages();
-			this.textareaEl?.focus();
 		}
 	}
 
@@ -583,8 +680,8 @@ export class ObchatChatView extends ItemView {
 		}
 
 		const userInput = this.textareaEl?.value.trim() ?? "";
-		if (!userInput) {
-			new Notice("请输入消息。");
+		if (!userInput && this.pendingImageAttachments.length === 0) {
+			new Notice("请输入消息或添加图片。");
 			return;
 		}
 
@@ -594,14 +691,24 @@ export class ObchatChatView extends ItemView {
 
 		try {
 			const contextSnapshot = await buildContextSnapshot(this.app, this.currentContextMode, userInput);
-			const requestContent = buildPromptContent(userInput, contextSnapshot);
+			const currentNoteImageAttachments = this.currentContextMode === "current-note"
+				? await createCurrentNoteImageAttachments(this.app)
+				: [];
+			const imageAttachments = [
+				...this.pendingImageAttachments,
+				...currentNoteImageAttachments,
+			];
+			const promptInput = userInput || "请分析这些图片。";
+			const requestContent = buildPromptContent(promptInput, contextSnapshot);
 
 			this.messages.push({
 				id: createMessageId(),
 				role: "user",
-				content: userInput,
+				content: userInput || "（图片）",
 				requestContent,
 				contextLabel: contextSnapshot?.label ?? null,
+				contextReferences: contextSnapshot?.references,
+				imageAttachments,
 				profileId: activeProfile.id,
 				profileName,
 				provider: activeProfile.provider,
@@ -610,10 +717,12 @@ export class ObchatChatView extends ItemView {
 			this.persistViewState();
 
 			this.draft = "";
-			if (this.textareaEl) {
-				this.textareaEl.value = "";
-			}
-			this.persistViewState();
+				if (this.textareaEl) {
+					this.textareaEl.value = "";
+				}
+				this.pendingImageAttachments = [];
+				this.renderPendingImageAttachments();
+				this.persistViewState();
 
 			this.isSending = true;
 			await this.generateAssistantReply(activeProfile, profileName, modelName);

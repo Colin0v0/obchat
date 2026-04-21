@@ -2,6 +2,7 @@ import type { ChatProvider } from "./base";
 import { joinUrl, safeJsonParse } from "./base";
 import { readSseData, streamSseEvents } from "./streaming-http";
 import type { ProviderRequest } from "../types";
+import { parseDataUrl } from "../utils/image-data";
 
 function extractGeminiText(payload: unknown): string {
 	if (!payload || typeof payload !== "object") {
@@ -42,6 +43,31 @@ function extractGeminiText(payload: unknown): string {
 	return textParts.join("\n").trim();
 }
 
+function buildGeminiParts(message: ProviderRequest["messages"][number]): Array<
+	| { text: string }
+	| { inlineData: { mimeType: string; data: string } }
+> {
+	const parts: Array<
+		| { text: string }
+		| { inlineData: { mimeType: string; data: string } }
+	> = [
+		{
+			text: message.content,
+		},
+	];
+
+	for (const attachment of message.imageAttachments ?? []) {
+		const imageData = parseDataUrl(attachment.dataUrl);
+		parts.push({
+			inlineData: {
+				mimeType: imageData.mimeType,
+				data: imageData.base64,
+			},
+		});
+	}
+	return parts;
+}
+
 export class GeminiProvider implements ChatProvider {
 	async *stream(request: ProviderRequest): AsyncGenerator<string> {
 		let emittedAnyText = false;
@@ -65,11 +91,7 @@ export class GeminiProvider implements ChatProvider {
 						: undefined,
 					contents: request.messages.map((message) => ({
 						role: message.role === "assistant" ? "model" : "user",
-						parts: [
-							{
-								text: message.content,
-							},
-						],
+						parts: buildGeminiParts(message),
 					})),
 				}),
 			},

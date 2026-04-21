@@ -2,7 +2,7 @@ import { MarkdownRenderer, Notice, type App, type Component } from "obsidian";
 import type { IconName } from "obsidian";
 
 import { getPreferredMarkdownSourcePath } from "../../utils/obsidian-view";
-import type { ConversationMessage } from "../../types";
+import type { ContextReference, ConversationMessage, ImageAttachment } from "../../types";
 
 interface RenderMessageListOptions {
 	app: App;
@@ -46,6 +46,43 @@ async function renderMessageBody(
 	);
 }
 
+function renderImageAttachments(parentEl: HTMLElement, attachments: ImageAttachment[]): void {
+	if (attachments.length === 0) {
+		return;
+	}
+
+	const attachmentsEl = parentEl.createDiv({ cls: "obchat-message-attachments" });
+	for (const attachment of attachments) {
+		const itemEl = attachmentsEl.createDiv({ cls: "obchat-message-attachment" });
+		itemEl.createEl("img", {
+			cls: "obchat-message-attachment__thumb",
+			attr: {
+				src: attachment.dataUrl,
+				alt: attachment.name,
+			},
+		});
+		itemEl.createSpan({ cls: "obchat-message-attachment__name", text: attachment.name });
+	}
+}
+
+function renderContextReferences(parentEl: HTMLElement, references: ContextReference[]): void {
+	if (references.length === 0) {
+		return;
+	}
+
+	const detailsEl = parentEl.createEl("details", { cls: "obchat-context-references" });
+	detailsEl.createEl("summary", {
+		cls: "obchat-context-references__summary",
+		text: `已引用 ${references.length} 篇笔记`,
+	});
+	const listEl = detailsEl.createDiv({ cls: "obchat-context-references__list" });
+	for (const reference of references) {
+		const itemEl = listEl.createDiv({ cls: "obchat-context-reference" });
+		itemEl.createDiv({ cls: "obchat-context-reference__path", text: reference.path });
+		itemEl.createDiv({ cls: "obchat-context-reference__preview", text: reference.preview });
+	}
+}
+
 export async function renderMessageList(options: RenderMessageListOptions): Promise<void> {
 	if (!options.messagesEl) {
 		return;
@@ -60,6 +97,7 @@ export async function renderMessageList(options: RenderMessageListOptions): Prom
 		return;
 	}
 
+	let pendingContextReferences: ContextReference[] = [];
 	for (const message of options.messages) {
 		const itemEl = options.messagesEl.createDiv({
 			cls: `obchat-message obchat-message--${message.role}`,
@@ -72,6 +110,13 @@ export async function renderMessageList(options: RenderMessageListOptions): Prom
 			cls: `obchat-message__body obchat-markdown markdown-rendered obchat-message__body--${message.role}`,
 		});
 		await renderMessageBody(options.app, options.component, bodyEl, message);
+		renderImageAttachments(itemEl, message.imageAttachments ?? []);
+		if (message.role === "user") {
+			pendingContextReferences = message.contextReferences ?? [];
+		} else {
+			renderContextReferences(itemEl, pendingContextReferences);
+			pendingContextReferences = [];
+		}
 
 		const shouldRenderAssistantActions = message.role === "assistant" && !message.isError;
 		if (shouldRenderAssistantActions) {

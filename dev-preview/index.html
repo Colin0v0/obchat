@@ -1,0 +1,548 @@
+<!doctype html>
+<html lang="zh-CN">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Obchat UI Preview</title>
+		<link rel="stylesheet" href="/styles.css" />
+		<style>
+			:root {
+				--background-primary: #fcfcfd;
+				--background-primary-alt: #f6f6f8;
+				--background-secondary: #f1f1f4;
+				--background-modifier-border: #dadbe2;
+				--background-modifier-hover: #ececf1;
+				--interactive-accent: #8b5cf6;
+				--text-on-accent: #ffffff;
+				--text-normal: #1f2328;
+				--text-muted: #6b7280;
+				--color-red: #d14343;
+				--font-ui-small: 14px;
+				--font-ui-smaller: 13px;
+				--font-ui-medium: 16px;
+				--font-text-size: 17px;
+				--font-semibold: 600;
+				--radius-s: 8px;
+				--radius-m: 12px;
+			}
+
+			body {
+				margin: 0;
+				font-family: "SF Pro Text", "PingFang SC", "Helvetica Neue", sans-serif;
+				background: linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%);
+				color: var(--text-normal);
+			}
+
+			.preview-shell {
+				max-width: 960px;
+				margin: 32px auto;
+				padding: 0 20px;
+			}
+
+			.preview-header {
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+				gap: 12px;
+				margin-bottom: 16px;
+			}
+
+			.preview-title {
+				font-size: 14px;
+				color: var(--text-muted);
+			}
+
+			.preview-actions {
+				display: flex;
+				gap: 8px;
+				flex-wrap: wrap;
+			}
+
+			.preview-actions button {
+				border: 1px solid var(--background-modifier-border);
+				border-radius: 999px;
+				background: white;
+				color: var(--text-normal);
+				padding: 8px 12px;
+				cursor: pointer;
+			}
+
+			.preview-actions button.is-active {
+				border-color: color-mix(in srgb, var(--interactive-accent) 45%, var(--background-modifier-border));
+				background: color-mix(in srgb, var(--interactive-accent) 12%, white);
+			}
+
+			.preview-card {
+				height: min(88vh, 920px);
+				border: 1px solid rgba(148, 163, 184, 0.22);
+				border-radius: 24px;
+				background: rgba(255, 255, 255, 0.92);
+				box-shadow: 0 18px 60px rgba(15, 23, 42, 0.08);
+				backdrop-filter: blur(18px);
+				overflow: hidden;
+			}
+
+			.preview-panel[hidden] {
+				display: none;
+			}
+
+			.preview-settings {
+				height: 100%;
+				overflow: auto;
+				padding: 42px 56px;
+				background: var(--background-primary);
+			}
+
+			.preview-settings h2 {
+				margin: 0 0 18px;
+				padding-bottom: 12px;
+				border-bottom: 1px solid var(--background-modifier-border);
+				font-size: 28px;
+				line-height: 1.25;
+			}
+
+			.preview-settings h3 {
+				margin: 28px 0 14px;
+				font-size: 22px;
+				line-height: 1.3;
+			}
+
+			.setting-item {
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+				gap: 24px;
+				min-height: 64px;
+				padding: 16px 0;
+				border-top: 1px solid var(--background-modifier-border);
+			}
+
+			.setting-item:first-of-type {
+				border-top: 0;
+			}
+
+			.setting-item-info {
+				min-width: 0;
+				flex: 1;
+			}
+
+			.setting-item-name {
+				font-size: var(--font-ui-medium);
+				font-weight: var(--font-semibold);
+				line-height: 1.35;
+			}
+
+			.setting-item-description {
+				margin-top: 4px;
+				color: var(--text-muted);
+				font-size: var(--font-ui-small);
+				line-height: 1.45;
+			}
+
+			.setting-item-control {
+				display: flex;
+				align-items: center;
+				justify-content: flex-end;
+				gap: 8px;
+				flex-wrap: wrap;
+				min-width: 280px;
+			}
+
+			.setting-item-control button,
+			.setting-item-control select,
+			.setting-item-control input,
+			.setting-item-control textarea {
+				border: 1px solid var(--background-modifier-border);
+				border-radius: 8px;
+				background: var(--background-primary-alt);
+				color: var(--text-normal);
+				font: inherit;
+			}
+
+			.setting-item-control button {
+				min-height: 32px;
+				padding: 5px 12px;
+				cursor: pointer;
+			}
+
+			.setting-item-control button.mod-cta {
+				border-color: color-mix(in srgb, var(--interactive-accent) 55%, var(--background-modifier-border));
+				background: var(--interactive-accent);
+				color: white;
+			}
+
+			.setting-item-control select,
+			.setting-item-control input {
+				min-height: 32px;
+				padding: 5px 10px;
+			}
+
+			.preview-note {
+				margin-top: 12px;
+				font-size: 13px;
+				color: var(--text-muted);
+			}
+		</style>
+	</head>
+	<body>
+		<div class="preview-shell">
+			<div class="preview-header">
+				<div>
+					<div class="preview-title">浏览器 UI 复刻页</div>
+					<div class="preview-note">改完 [styles.css](/styles.css) 或聊天相关 DOM 结构后，刷新这个页面就能看效果。</div>
+				</div>
+				<div class="preview-actions">
+					<button type="button" data-screen="chat" class="is-active">聊天预览</button>
+					<button type="button" data-screen="settings">设置页预览</button>
+					<button type="button" data-theme="light">浅色</button>
+					<button type="button" data-theme="dark">深色</button>
+				</div>
+			</div>
+
+			<div class="preview-card preview-panel" data-screen-panel="chat">
+				<div class="obchat-view">
+					<div class="obchat-header">
+						<div class="obchat-header__main">
+							<div class="obchat-header__title">
+								<span>Obchat：</span>
+								<span class="obchat-title-session-picker">
+									<span class="obchat-title-session-label">日记总结</span>
+									<span class="obchat-title-session-arrow"></span>
+									<select class="obchat-title-session-native">
+										<option>日记总结</option>
+										<option>图论问答</option>
+										<option>论文改写</option>
+									</select>
+								</span>
+							</div>
+						</div>
+						<div class="obchat-header__actions">
+							<button class="obchat-icon-button obchat-icon-button--header" type="button" data-icon="plus" aria-label="新建会话"></button>
+							<button class="obchat-icon-button obchat-icon-button--header" type="button" data-icon="pencil" aria-label="重命名当前会话"></button>
+							<button class="obchat-icon-button obchat-icon-button--header" type="button" data-icon="download" aria-label="导出当前会话为 Markdown"></button>
+							<button class="obchat-icon-button obchat-icon-button--header" type="button" data-icon="trash-2" aria-label="删除当前会话"></button>
+							<button class="obchat-icon-button obchat-icon-button--header" type="button" data-icon="settings-2" aria-label="打开 Obchat 设置"></button>
+						</div>
+					</div>
+
+					<div class="obchat-messages">
+						<div class="obchat-message obchat-message--assistant">
+							<div class="obchat-message__body obchat-markdown markdown-rendered obchat-message__body--assistant">
+								<p>这里是浏览器里的助手回答预览。你可以直接调间距、字号、圆角、按钮位置，不用每次重新拖回 Obsidian 里试。</p>
+								<p>如果你正在调用户气泡、操作按钮、顶部工具栏，这个页面会很省时间。</p>
+							</div>
+							<div class="obchat-message__actions">
+								<button class="obchat-icon-button obchat-icon-button--message" type="button" data-icon="arrow-down-to-line" aria-label="插入到当前笔记"></button>
+								<button class="obchat-icon-button obchat-icon-button--message" type="button" data-icon="file-pen-line" aria-label="审阅并应用到笔记"></button>
+								<button class="obchat-icon-button obchat-icon-button--message" type="button" data-icon="copy" aria-label="复制回答内容"></button>
+							</div>
+						</div>
+
+						<div class="obchat-message obchat-message--user">
+							<div class="obchat-message__body obchat-markdown markdown-rendered obchat-message__body--user">
+								我想把这个插件做得更像真正能日常用的聊天写作工具。
+							</div>
+						</div>
+
+						<div class="obchat-message obchat-message--assistant">
+							<div class="obchat-message__body obchat-markdown markdown-rendered obchat-message__body--assistant">
+								<p>那下一步最值钱的就是继续打磨：</p>
+								<ul>
+									<li>消息区和输入区的视觉节奏</li>
+									<li>笔记改写的局部应用体验</li>
+									<li>会话管理和操作入口</li>
+								</ul>
+							</div>
+							<details class="obchat-context-references">
+								<summary class="obchat-context-references__summary">已引用 2 篇笔记</summary>
+								<div class="obchat-context-references__list">
+									<div class="obchat-context-reference">
+										<div class="obchat-context-reference__path">Daily/2026-04-21.md</div>
+										<div class="obchat-context-reference__preview">今天继续打磨 Obchat 的 UI，重点是让输入区和消息区更像日常聊天工具。</div>
+									</div>
+									<div class="obchat-context-reference">
+										<div class="obchat-context-reference__path">Projects/Obchat/Design notes.md</div>
+										<div class="obchat-context-reference__preview">界面方向：Obsidian 原生感 + ChatGPT 聊天结构 + 轻文档工具气质。</div>
+									</div>
+								</div>
+							</details>
+							<div class="obchat-message__actions">
+								<button class="obchat-icon-button obchat-icon-button--message" type="button" data-icon="arrow-down-to-line" aria-label="插入到当前笔记"></button>
+								<button class="obchat-icon-button obchat-icon-button--message" type="button" data-icon="file-pen-line" aria-label="审阅并应用到笔记"></button>
+								<button class="obchat-icon-button obchat-icon-button--message" type="button" data-icon="copy" aria-label="复制回答内容"></button>
+							</div>
+						</div>
+					</div>
+
+					<div class="obchat-composer">
+						<div class="obchat-composer__input-shell">
+							<div class="obchat-composer__context">
+								<div class="obchat-controls">
+									<div class="obchat-controls__group">
+										<select class="obchat-select obchat-select--wide">
+											<option>codex</option>
+											<option>claude</option>
+										</select>
+									</div>
+									<div class="obchat-controls__group obchat-controls__group--model">
+										<select class="obchat-select obchat-select--wide">
+											<option>gpt-5.2</option>
+											<option>claude-opus-4-6</option>
+										</select>
+									</div>
+								</div>
+								<select class="obchat-select obchat-select--context">
+									<option>全库相关笔记</option>
+									<option>当前笔记全文</option>
+								</select>
+							</div>
+							<div class="obchat-composer__resize-handle" role="separator" aria-label="拖动调整输入框高度" title="拖动调整输入框高度"></div>
+							<textarea class="obchat-composer__input" placeholder="输入你的问题，Shift+Enter 换行，Enter 发送"></textarea>
+							<button class="obchat-button obchat-button--send obchat-composer__send" type="button">发送</button>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div class="preview-card preview-panel" data-screen-panel="settings" hidden>
+				<div class="preview-settings">
+					<h2>Obchat 设置</h2>
+
+					<h3>供应商</h3>
+
+					<div class="obchat-provider-section">
+						<div class="setting-item">
+							<div class="setting-item-info">
+								<div class="setting-item-name">管理供应商</div>
+								<div class="setting-item-description">支持同时保存多个 provider 配置，并在聊天页随时切换。</div>
+							</div>
+							<div class="setting-item-control">
+								<button type="button" class="mod-cta">新增供应商</button>
+							</div>
+						</div>
+
+						<table class="obchat-provider-table">
+							<thead>
+								<tr>
+									<th>名称</th>
+									<th>供应商</th>
+									<th>模型</th>
+									<th>操作</th>
+								</tr>
+							</thead>
+							<tbody>
+								<tr>
+									<td class="obchat-provider-table__name">Codex / OpenAI Responses</td>
+									<td>OpenAI Responses</td>
+									<td class="obchat-provider-table__model">gpt-5.2</td>
+									<td class="obchat-provider-table__actions">
+										<button class="obchat-provider-table__button" type="button">配置</button>
+										<button class="obchat-provider-table__button" type="button">测试</button>
+										<button class="obchat-provider-table__button" type="button">拉模型</button>
+										<button class="obchat-provider-table__button" type="button">删除</button>
+									</td>
+								</tr>
+								<tr>
+									<td class="obchat-provider-table__name">claude</td>
+									<td>Claude</td>
+									<td class="obchat-provider-table__model">claude-opus-4-6</td>
+									<td class="obchat-provider-table__actions">
+										<button class="obchat-provider-table__button" type="button">配置</button>
+										<button class="obchat-provider-table__button" type="button">测试</button>
+										<button class="obchat-provider-table__button" type="button">拉模型</button>
+										<button class="obchat-provider-table__button" type="button">删除</button>
+									</td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+
+					<h3>默认行为</h3>
+
+					<div class="setting-item">
+						<div class="setting-item-info">
+							<div class="setting-item-name">默认上下文</div>
+							<div class="setting-item-description">发送时默认附带的内容。</div>
+						</div>
+						<div class="setting-item-control">
+							<select>
+								<option>全库相关笔记</option>
+								<option>当前笔记全文</option>
+								<option>无上下文</option>
+							</select>
+						</div>
+					</div>
+
+					<div class="setting-item">
+						<div class="setting-item-info">
+							<div class="setting-item-name">默认插入方式</div>
+							<div class="setting-item-description">回答插回笔记的位置。</div>
+						</div>
+						<div class="setting-item-control">
+							<select>
+								<option>插入到光标处</option>
+								<option>追加到文末</option>
+								<option>替换当前选区</option>
+							</select>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<script>
+			const ICONS = {
+				plus: `
+					<svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<path d="M5 12h14"></path>
+						<path d="M12 5v14"></path>
+					</svg>
+				`,
+				pencil: `
+					<svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3Z"></path>
+						<path d="m15 5 4 4"></path>
+					</svg>
+				`,
+				download: `
+					<svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+						<path d="M7 10l5 5 5-5"></path>
+						<path d="M12 15V3"></path>
+					</svg>
+				`,
+				"trash-2": `
+					<svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<path d="M3 6h18"></path>
+						<path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+						<path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path>
+						<path d="M10 11v6"></path>
+						<path d="M14 11v6"></path>
+					</svg>
+				`,
+				"refresh-cw": `
+					<svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<path d="M23 4v6h-6"></path>
+						<path d="M1 20v-6h6"></path>
+						<path d="M3.5 9a9 9 0 0 1 14.1-3.4L23 10"></path>
+						<path d="M20.5 15a9 9 0 0 1-14.1 3.4L1 14"></path>
+					</svg>
+				`,
+				"settings-2": `
+					<svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<path d="M20 7h-9"></path>
+						<path d="M14 17H5"></path>
+						<circle cx="17" cy="17" r="3"></circle>
+						<circle cx="7" cy="7" r="3"></circle>
+					</svg>
+				`,
+				"arrow-down-to-line": `
+					<svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<path d="M12 3v14"></path>
+						<path d="m6 11 6 6 6-6"></path>
+						<path d="M5 21h14"></path>
+					</svg>
+				`,
+				"file-pen-line": `
+					<svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<path d="M12 20h9"></path>
+						<path d="M16.5 3H7a2 2 0 0 0-2 2v14"></path>
+						<path d="M14 3v4a2 2 0 0 0 2 2h4"></path>
+						<path d="M16.4 13.6a2.1 2.1 0 1 0-3-3l-6 6V20h3.4Z"></path>
+					</svg>
+				`,
+				copy: `
+					<svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<rect x="9" y="9" width="13" height="13" rx="2"></rect>
+						<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+					</svg>
+				`,
+			};
+
+			const themes = {
+				light: {
+					"--background-primary": "#fcfcfd",
+					"--background-primary-alt": "#f6f6f8",
+					"--background-secondary": "#f1f1f4",
+					"--background-modifier-border": "#dadbe2",
+					"--background-modifier-hover": "#ececf1",
+					"--interactive-accent": "#8b5cf6",
+					"--text-on-accent": "#ffffff",
+					"--text-normal": "#1f2328",
+					"--text-muted": "#6b7280",
+					"--color-red": "#d14343",
+				},
+				dark: {
+					"--background-primary": "#14161b",
+					"--background-primary-alt": "#1b1f27",
+					"--background-secondary": "#20242d",
+					"--background-modifier-border": "#343b4a",
+					"--background-modifier-hover": "#292f3a",
+					"--interactive-accent": "#8b5cf6",
+					"--text-on-accent": "#ffffff",
+					"--text-normal": "#eef2f7",
+					"--text-muted": "#9aa4b2",
+					"--color-red": "#ff8e8e",
+				},
+			};
+
+			for (const button of document.querySelectorAll("[data-theme]")) {
+				button.addEventListener("click", () => {
+					const theme = themes[button.dataset.theme];
+					for (const [key, value] of Object.entries(theme)) {
+						document.documentElement.style.setProperty(key, value);
+					}
+				});
+			}
+
+			for (const button of document.querySelectorAll("[data-screen]")) {
+				button.addEventListener("click", () => {
+					const screen = button.dataset.screen;
+					for (const panel of document.querySelectorAll("[data-screen-panel]")) {
+						panel.hidden = panel.dataset.screenPanel !== screen;
+					}
+					for (const screenButton of document.querySelectorAll("[data-screen]")) {
+						screenButton.classList.toggle("is-active", screenButton === button);
+					}
+				});
+			}
+
+			for (const iconButton of document.querySelectorAll("[data-icon]")) {
+				const iconName = iconButton.dataset.icon;
+				if (!iconName || !ICONS[iconName]) {
+					continue;
+				}
+
+				iconButton.innerHTML = ICONS[iconName];
+			}
+
+			for (const shell of document.querySelectorAll(".obchat-composer__input-shell")) {
+				const handle = shell.querySelector(".obchat-composer__resize-handle");
+				const textarea = shell.querySelector(".obchat-composer__input");
+				if (!handle || !textarea) {
+					continue;
+				}
+
+				handle.addEventListener("mousedown", (event) => {
+					event.preventDefault();
+					const startY = event.clientY;
+					const startHeight = textarea.getBoundingClientRect().height;
+					const minHeight = 88;
+					const maxHeight = Math.min(420, window.innerHeight * 0.55);
+
+					const onMouseMove = (moveEvent) => {
+						textarea.style.height = `${Math.min(maxHeight, Math.max(minHeight, startHeight + startY - moveEvent.clientY))}px`;
+					};
+
+					const onMouseUp = () => {
+						window.removeEventListener("mousemove", onMouseMove);
+						window.removeEventListener("mouseup", onMouseUp);
+					};
+
+					window.addEventListener("mousemove", onMouseMove);
+					window.addEventListener("mouseup", onMouseUp);
+				});
+			}
+		</script>
+	</body>
+</html>

@@ -12,9 +12,8 @@ export const PROVIDER_TITLES: Record<ObchatProvider, string> = {
 	"openai-compatible": "OpenAI-compatible",
 };
 
-export const CONTEXT_OPTIONS: Record<ObchatContextMode, string> = {
+export const CONTEXT_OPTIONS: Partial<Record<ObchatContextMode, string>> = {
 	none: "无上下文",
-	selection: "当前选中文本",
 	"current-note": "当前笔记全文",
 	"vault-related": "全库相关笔记",
 };

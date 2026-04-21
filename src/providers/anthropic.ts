@@ -2,6 +2,7 @@ import type { ChatProvider } from "./base";
 import { joinUrl, safeJsonParse } from "./base";
 import { readSseData, streamSseEvents } from "./streaming-http";
 import type { ProviderRequest } from "../types";
+import { parseDataUrl } from "../utils/image-data";
 
 const ANTHROPIC_API_VERSION = "2023-06-01";
 const DEFAULT_MAX_TOKENS = 4096;
@@ -29,6 +30,33 @@ function extractClaudeDelta(payload: unknown): string {
 	return typeof textValue === "string" ? textValue : "";
 }
 
+function buildClaudeContent(message: ProviderRequest["messages"][number]): string | Array<
+	| { type: "text"; text: string }
+	| { type: "image"; source: { type: "base64"; media_type: string; data: string } }
+> {
+	if (!message.imageAttachments?.length) {
+		return message.content;
+	}
+
+	return [
+		{
+			type: "text",
+			text: message.content,
+		},
+		...message.imageAttachments.map((attachment) => {
+			const imageData = parseDataUrl(attachment.dataUrl);
+			return {
+				type: "image" as const,
+				source: {
+					type: "base64" as const,
+					media_type: imageData.mimeType,
+					data: imageData.base64,
+				},
+			};
+		}),
+	];
+}
+
 export class AnthropicProvider implements ChatProvider {
 	async *stream(request: ProviderRequest): AsyncGenerator<string> {
 		let emittedAnyText = false;
@@ -46,7 +74,7 @@ export class AnthropicProvider implements ChatProvider {
 				system: request.systemPrompt.trim() || undefined,
 				messages: request.messages.map((message) => ({
 					role: message.role,
-					content: message.content,
+					content: buildClaudeContent(message),
 				})),
 			}),
 		})) {
