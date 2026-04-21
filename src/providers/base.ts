@@ -1,7 +1,8 @@
-import type { ProviderRequest } from "../types";
+import type { ProviderModelListRequest, ProviderRequest } from "../types";
 
 export interface ChatProvider {
 	stream(request: ProviderRequest): AsyncGenerator<string>;
+	listModels?(request: ProviderModelListRequest): Promise<string[]>;
 }
 
 export function joinUrl(baseUrl: string, path: string): string {

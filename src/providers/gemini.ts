@@ -52,6 +52,7 @@ export class GeminiProvider implements ChatProvider {
 					"x-goog-api-key": request.apiKey,
 					"Content-Type": "application/json",
 				},
+				signal: request.signal,
 				body: JSON.stringify({
 					systemInstruction: request.systemPrompt.trim()
 						? {

@@ -2,73 +2,149 @@
 	display: flex;
 	flex-direction: column;
 	height: 100%;
-	gap: 12px;
-	padding: 12px;
+	gap: 10px;
+	padding: 10px;
 	background: var(--background-primary);
 	color: var(--text-normal);
 }
 
 .obchat-header {
 	display: flex;
-	align-items: flex-start;
+	align-items: center;
 	justify-content: space-between;
-	gap: 12px;
+	gap: 10px;
 }
 
-.obchat-header__title-wrap {
+.obchat-header__main {
 	display: flex;
-	flex-direction: column;
-	gap: 4px;
+	align-items: center;
+	gap: 10px;
+	min-width: 0;
+	flex: 1;
 }
 
 .obchat-header__title {
-	font-size: var(--font-ui-large);
+	font-size: calc(var(--font-ui-medium) + 1px);
 	font-weight: var(--font-semibold);
-}
-
-.obchat-header__subtitle {
-	color: var(--text-muted);
-	font-size: var(--font-ui-smaller);
 }
 
 .obchat-header__actions {
 	display: flex;
 	align-items: center;
-	gap: 8px;
+	gap: 6px;
+	flex-shrink: 0;
 }
 
 .obchat-header-meta {
 	display: flex;
 	flex-wrap: wrap;
-	gap: 8px;
-}
-
-.obchat-chip {
-	padding: 4px 8px;
-	border: 1px solid var(--background-modifier-border);
-	border-radius: var(--radius-s);
-	background: var(--background-secondary);
+	gap: 6px;
 	color: var(--text-muted);
 	font-size: var(--font-ui-smaller);
+	min-width: 0;
 }
 
-.obchat-toolbar {
+.obchat-header-meta__text {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.obchat-controls {
 	display: flex;
 	align-items: center;
-	gap: 8px;
-	padding: 10px 12px;
-	border: 1px solid var(--background-modifier-border);
-	border-radius: var(--radius-m);
-	background: var(--background-secondary);
+	gap: 10px;
+	padding: 2px 0 2px;
 }
 
-.obchat-toolbar__label {
+.obchat-controls__group {
+	display: flex;
+	align-items: center;
+	min-width: 0;
+	flex: 1 1 0;
+}
+
+.obchat-controls__group--model {
+	flex: 1;
+}
+
+.obchat-controls__actions {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	flex-shrink: 0;
+	padding: 3px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 12px;
+	background: var(--background-primary-alt);
+}
+
+.obchat-controls__label {
+	flex-shrink: 0;
 	color: var(--text-muted);
 	font-size: var(--font-ui-smaller);
+}
+
+.obchat-controls__action {
+	border-radius: 9px;
 }
 
 .obchat-select {
+	min-width: 164px;
+	max-width: 100%;
+	height: 36px;
+	padding: 0 32px 0 10px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 12px;
+	background-color: var(--background-primary-alt);
+	background-image:
+		linear-gradient(45deg, transparent 50%, var(--text-muted) 50%),
+		linear-gradient(135deg, var(--text-muted) 50%, transparent 50%);
+	background-position:
+		calc(100% - 16px) calc(50% - 1px),
+		calc(100% - 11px) calc(50% - 1px);
+	background-size: 5px 5px, 5px 5px;
+	background-repeat: no-repeat;
+	color: var(--text-normal);
+	font-size: var(--font-ui-small);
+	line-height: 1.2;
+	box-shadow: none;
+	appearance: none;
+	-webkit-appearance: none;
+	-moz-appearance: none;
+	transition:
+		border-color 140ms ease,
+		background-color 140ms ease,
+		box-shadow 140ms ease;
+}
+
+.obchat-select:hover {
+	background-color: var(--background-secondary);
+	border-color: color-mix(in srgb, var(--interactive-accent) 18%, var(--background-modifier-border));
+}
+
+.obchat-select:focus {
+	outline: none;
+	border-color: var(--interactive-accent);
+	box-shadow: 0 0 0 1px color-mix(in srgb, var(--interactive-accent) 40%, transparent);
+}
+
+.obchat-select:disabled {
+	opacity: 0.65;
+	cursor: not-allowed;
+}
+
+.obchat-select--wide {
+	min-width: 0;
+	max-width: none;
+	width: 100%;
+	flex: 1 1 auto;
+}
+
+.obchat-select--session {
 	min-width: 180px;
+	max-width: min(44vw, 320px);
+	flex: 0 1 320px;
 }
 
 .obchat-messages {
@@ -78,74 +154,104 @@
 	display: flex;
 	flex-direction: column;
 	gap: 12px;
-	padding-right: 4px;
+	padding-right: 2px;
 }
 
 .obchat-empty {
-	display: flex;
-	flex-direction: column;
-	gap: 6px;
-	padding: 20px 16px;
-	border: 1px dashed var(--background-modifier-border);
-	border-radius: var(--radius-m);
-	background: var(--background-secondary);
-}
-
-.obchat-empty__title {
-	font-weight: var(--font-semibold);
-}
-
-.obchat-empty__desc {
+	padding: 14px 12px;
 	color: var(--text-muted);
 	font-size: var(--font-ui-smaller);
-	line-height: 1.5;
+	text-align: center;
 }
 
 .obchat-message {
 	display: flex;
 	flex-direction: column;
-	gap: 8px;
-	padding: 12px;
-	border: 1px solid var(--background-modifier-border);
-	border-radius: var(--radius-m);
-	background: var(--background-secondary);
+	gap: 6px;
+	padding: 0;
+	max-width: min(92%, 720px);
 }
 
 .obchat-message--user {
-	background: color-mix(in srgb, var(--interactive-accent) 10%, var(--background-primary));
+	align-self: flex-end;
 }
 
 .obchat-message--assistant {
-	background: var(--background-secondary);
+	align-self: flex-start;
 }
 
 .obchat-message--error {
-	border-color: var(--color-red);
+	color: var(--color-red);
 }
 
 .obchat-message__meta {
 	display: flex;
 	flex-wrap: wrap;
 	align-items: center;
-	gap: 8px;
+	gap: 6px;
 	font-size: var(--font-ui-smaller);
 	color: var(--text-muted);
+	min-height: 20px;
 }
 
-.obchat-message__role {
-	font-weight: var(--font-semibold);
-	color: var(--text-normal);
+.obchat-message--user .obchat-message__meta {
+	justify-content: flex-end;
 }
 
 .obchat-message__context {
 	padding: 2px 6px;
 	border-radius: var(--radius-s);
 	background: var(--background-modifier-hover);
+	font-size: calc(var(--font-ui-smaller) - 2px);
+}
+
+.obchat-message__context--below {
+	align-self: flex-start;
+	margin-top: 2px;
+}
+
+.obchat-message__actions {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	align-self: flex-start;
+	margin-top: 2px;
+	padding-left: 2px;
 }
 
 .obchat-message__body {
-	line-height: 1.6;
+	line-height: 1.55;
 	word-break: break-word;
+	padding: 10px 12px;
+	border-radius: 14px;
+	font-size: calc(var(--font-text-size) - 1px);
+	border: 1px solid var(--background-modifier-border);
+	cursor: text;
+	user-select: text;
+	-webkit-user-select: text;
+}
+
+.obchat-message__body *,
+.obchat-message__body code,
+.obchat-message__body pre {
+	user-select: text;
+	-webkit-user-select: text;
+}
+
+.obchat-message__body--user {
+	background: color-mix(in srgb, var(--interactive-accent) 10%, var(--background-secondary));
+	align-self: flex-end;
+	width: fit-content;
+	max-width: min(78%, 560px);
+	padding-left: 14px;
+	padding-right: 14px;
+}
+
+.obchat-message__body--assistant {
+	padding: 0;
+	border: 0;
+	border-radius: 0;
+	background: transparent;
 }
 
 .obchat-message__body--streaming {
@@ -161,60 +267,221 @@
 	margin-bottom: 0;
 }
 
-.obchat-message__actions {
-	display: flex;
-	gap: 8px;
-}
-
 .obchat-composer {
 	display: flex;
 	flex-direction: column;
+	gap: 6px;
+	padding: 0;
+	margin-top: auto;
+	padding-top: 6px;
+	padding-bottom: 10px;
+	background: var(--background-primary);
+}
+
+.obchat-composer__topbar {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
 	gap: 8px;
-	padding: 12px;
-	border: 1px solid var(--background-modifier-border);
-	border-radius: var(--radius-m);
-	background: var(--background-secondary);
+}
+
+.obchat-composer__actions {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex-shrink: 0;
 }
 
 .obchat-composer__input {
 	min-height: 96px;
 	resize: vertical;
 	border: 1px solid var(--background-modifier-border);
-	border-radius: var(--radius-m);
-	background: var(--background-primary);
+	border-radius: 14px;
+	background: var(--background-primary-alt);
 	color: var(--text-normal);
-	padding: 10px 12px;
-	line-height: 1.6;
+	padding: 12px 14px;
+	line-height: 1.65;
+	font-size: calc(var(--font-text-size) - 1px);
+	box-shadow: none;
 }
 
 .obchat-composer__input:focus {
 	border-color: var(--interactive-accent);
-	box-shadow: 0 0 0 1px var(--interactive-accent);
+	box-shadow: 0 0 0 1px color-mix(in srgb, var(--interactive-accent) 55%, transparent);
 	outline: none;
-}
-
-.obchat-composer__actions {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	gap: 12px;
-}
-
-.obchat-composer__hint {
-	color: var(--text-muted);
-	font-size: var(--font-ui-smaller);
 }
 
 .obchat-button {
 	border: 1px solid var(--background-modifier-border);
-	border-radius: var(--radius-s);
+	border-radius: 999px;
 	background: var(--background-primary);
 	color: var(--text-normal);
 	padding: 6px 12px;
+	font-size: var(--font-ui-smaller);
 }
 
 .obchat-button:hover {
 	background: var(--background-modifier-hover);
+}
+
+.obchat-button--ghost {
+	background: transparent;
+}
+
+.obchat-button--send {
+	min-width: 64px;
+	border-color: color-mix(in srgb, var(--interactive-accent) 35%, var(--background-modifier-border));
+}
+
+.obchat-icon-button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 28px;
+	height: 28px;
+	padding: 0;
+	border: 1px solid transparent;
+	border-radius: var(--radius-s);
+	background: transparent;
+	color: var(--text-muted);
+	flex-shrink: 0;
+	line-height: 0;
+	--icon-size: 16px;
+}
+
+.obchat-icon-button svg.svg-icon,
+.obchat-icon-button .svg-icon {
+	width: var(--icon-size);
+	height: var(--icon-size);
+}
+
+.obchat-icon-button:hover {
+	color: var(--text-normal);
+	background: var(--background-modifier-hover);
+	border-color: var(--background-modifier-border);
+}
+
+.obchat-icon-button:focus-visible {
+	outline: none;
+	box-shadow: 0 0 0 2px color-mix(in srgb, var(--interactive-accent) 30%, transparent);
+}
+
+.obchat-icon-button--header {
+	width: 30px;
+	height: 30px;
+	--icon-size: 17px;
+}
+
+.obchat-icon-button--message {
+	width: 24px;
+	height: 24px;
+	--icon-size: 15px;
+}
+
+.obchat-icon-button--inline {
+	flex-shrink: 0;
+}
+
+@media (max-width: 720px) {
+	.obchat-controls {
+		flex-wrap: wrap;
+	}
+
+	.obchat-controls__group {
+		flex: 1 1 100%;
+	}
+
+	.obchat-controls__actions {
+		margin-left: auto;
+	}
+}
+
+.obchat-markdown {
+	font-size: calc(var(--font-text-size) - 1px);
+}
+
+.obchat-markdown p,
+.obchat-markdown ul,
+.obchat-markdown ol,
+.obchat-markdown blockquote,
+.obchat-markdown pre,
+.obchat-markdown table {
+	margin-top: 0;
+	margin-bottom: 12px;
+}
+
+.obchat-markdown ul,
+.obchat-markdown ol {
+	padding-left: 1.5em;
+}
+
+.obchat-markdown li + li {
+	margin-top: 4px;
+}
+
+.obchat-markdown h1,
+.obchat-markdown h2,
+.obchat-markdown h3,
+.obchat-markdown h4 {
+	margin-top: 18px;
+	margin-bottom: 10px;
+	line-height: 1.35;
+}
+
+.obchat-markdown code {
+	font-size: 0.9em;
+	padding: 0.12em 0.35em;
+	border-radius: 6px;
+	background: var(--background-secondary);
+}
+
+.obchat-markdown pre {
+	padding: 12px;
+	border-radius: var(--radius-m);
+	background: var(--background-secondary);
+	overflow-x: auto;
+	border: 1px solid var(--background-modifier-border);
+}
+
+.obchat-markdown pre code {
+	padding: 0;
+	background: transparent;
+}
+
+.obchat-markdown blockquote {
+	padding-left: 12px;
+	border-left: 3px solid var(--background-modifier-border);
+	color: var(--text-muted);
+}
+
+.obchat-markdown table {
+	width: 100%;
+	border-collapse: collapse;
+	font-size: 0.95em;
+}
+
+.obchat-markdown th,
+.obchat-markdown td {
+	padding: 8px 10px;
+	border: 1px solid var(--background-modifier-border);
+	text-align: left;
+	vertical-align: top;
+}
+
+.obchat-markdown th {
+	background: var(--background-secondary);
+	font-weight: var(--font-semibold);
+}
+
+.obchat-markdown .math,
+.obchat-markdown mjx-container {
+	overflow-x: auto;
+	max-width: 100%;
+}
+
+.obchat-markdown mjx-container[display="true"] {
+	margin: 12px 0;
+	padding: 8px 0;
 }
 
 .obchat-setting-text {
@@ -225,6 +492,97 @@
 	width: min(100%, 520px);
 }
 
-.obchat-secret-setting .setting-item-control {
-	min-width: 320px;
+.obchat-review__intro {
+	margin-bottom: 10px;
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+	word-break: break-all;
+}
+
+.obchat-review__modebar {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	margin-bottom: 10px;
+}
+
+.obchat-review__mode-select {
+	min-width: 180px;
+	max-width: 260px;
+}
+
+.obchat-review {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 12px;
+}
+
+.obchat-review__pane {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.obchat-review__label {
+	font-size: var(--font-ui-smaller);
+	color: var(--text-muted);
+}
+
+.obchat-review__textarea {
+	min-height: 320px;
+	width: 100%;
+	resize: vertical;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 12px;
+	background: var(--background-primary-alt);
+	color: var(--text-normal);
+	padding: 12px;
+	line-height: 1.6;
+	font-size: calc(var(--font-text-size) - 1px);
+}
+
+.obchat-review__diff {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	margin-top: 12px;
+}
+
+.obchat-review__diff-preview {
+	margin: 0;
+	min-height: 140px;
+	max-height: 240px;
+	overflow: auto;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 12px;
+	background: var(--background-primary-alt);
+	color: var(--text-normal);
+	padding: 12px;
+	line-height: 1.6;
+	font-size: calc(var(--font-text-size) - 2px);
+	white-space: pre-wrap;
+	word-break: break-word;
+}
+
+.obchat-review__actions {
+	display: flex;
+	justify-content: flex-end;
+	gap: 8px;
+	margin-top: 12px;
+}
+
+@media (max-width: 720px) {
+	.obchat-review__modebar {
+		flex-direction: column;
+		align-items: stretch;
+	}
+
+	.obchat-review__mode-select {
+		max-width: none;
+	}
+
+	.obchat-review {
+		grid-template-columns: 1fr;
+	}
 }

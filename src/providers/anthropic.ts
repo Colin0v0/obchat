@@ -38,6 +38,7 @@ export class AnthropicProvider implements ChatProvider {
 				"anthropic-version": ANTHROPIC_API_VERSION,
 				"Content-Type": "application/json",
 			},
+			signal: request.signal,
 			body: JSON.stringify({
 				model: request.model,
 				max_tokens: DEFAULT_MAX_TOKENS,
